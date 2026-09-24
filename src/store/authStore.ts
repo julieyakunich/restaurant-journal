@@ -23,6 +23,8 @@ interface AuthState {
     displayName: string,
   ) => Promise<{ ok: boolean; needsEmailConfirm: boolean }>;
   signIn: (email: string, password: string) => Promise<boolean>;
+  /** No credentials involved — Supabase issues a real, isolated anonymous user. */
+  signInAsGuest: () => Promise<boolean>;
   signOut: () => Promise<void>;
   clearError: () => void;
 }
@@ -83,6 +85,21 @@ export const useAuthStore = create<AuthState>((set) => ({
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       set({ error: error.message });
+      return false;
+    }
+    return true;
+  },
+
+  async signInAsGuest() {
+    set({ error: null });
+    const { error } = await supabase.auth.signInAnonymously();
+    if (error) {
+      set({
+        error:
+          error.message === 'Anonymous sign-ins are disabled'
+            ? 'Guest browsing isn’t turned on for this project yet.'
+            : error.message,
+      });
       return false;
     }
     return true;

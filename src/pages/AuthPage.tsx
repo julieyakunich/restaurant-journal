@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Utensils, Mail, Lock, User, Loader2, CheckCircle2 } from 'lucide-react';
+import { Utensils, Mail, Lock, User, Loader2, CheckCircle2, Compass } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { cn } from '../lib/cn';
 
@@ -10,6 +10,7 @@ export function AuthPage() {
   const navigate = useNavigate();
   const signIn = useAuthStore((s) => s.signIn);
   const signUp = useAuthStore((s) => s.signUp);
+  const signInAsGuest = useAuthStore((s) => s.signInAsGuest);
   const error = useAuthStore((s) => s.error);
   const clearError = useAuthStore((s) => s.clearError);
 
@@ -18,12 +19,25 @@ export function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+  const [guestBusy, setGuestBusy] = useState(false);
   const [confirmSent, setConfirmSent] = useState(false);
 
   function switchMode(next: Mode) {
     setMode(next);
     clearError();
     setConfirmSent(false);
+  }
+
+  async function onGuest() {
+    if (guestBusy || busy) return;
+    setGuestBusy(true);
+    clearError();
+    try {
+      const ok = await signInAsGuest();
+      if (ok) navigate('/', { replace: true });
+    } finally {
+      setGuestBusy(false);
+    }
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -155,6 +169,29 @@ export function AuthPage() {
                 {mode === 'signin' ? 'Sign in' : 'Create account'}
               </button>
             </form>
+          )}
+
+          {!confirmSent && (
+            <>
+              <div className="my-4 flex items-center gap-3 text-xs font-medium text-slate-400">
+                <span className="h-px flex-1 bg-slate-200" />
+                or
+                <span className="h-px flex-1 bg-slate-200" />
+              </div>
+              <button
+                type="button"
+                onClick={onGuest}
+                disabled={busy || guestBusy}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+              >
+                {guestBusy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : (
+                  <Compass className="h-4 w-4" aria-hidden />
+                )}
+                Browse without an account
+              </button>
+            </>
           )}
         </div>
 
